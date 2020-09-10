@@ -1,0 +1,412 @@
+
+
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+
+  <meta charset="UTF-8">
+
+
+
+  <title>CodePen - 3D Secure with Hosted Fields</title>
+  
+  
+  <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css'>
+  
+<style>
+* {
+  padding: 0;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  height: 100vh;
+  padding: 2em;
+  flex-direction: column;
+}
+
+hr {
+  width: 85%;
+}
+
+.row {
+  margin-bottom: 1em;
+}
+
+.row:last-child {
+  margin-bottom: 0;
+}
+</style>
+
+  
+
+</head>
+
+<body translate="no" >
+  <h1>3D Secure with Hosted Fields</h1>
+<hr>
+
+<form action="javascript:void(0)" class="container">
+  <div class="row">
+    <div class="col-xs-12">
+      <p class="lead">This is a functional example of performing 3D Secure verification on a credit card tokenized with Hosted Fields. For 3DS 2.0, it's highly recomended to supply additional information about the customer to achieve a frictionless flow (no challenge presented).</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <p>For this demo, you may populate the fields with fake customer information.</p>
+      <button class="btn btn-warning" id="autofill">Autofill Customer Information</button>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-xs-12" >
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" class="form-control" id="email" placeholder="you@example.com">
+        <span id="help-email" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-phone">Billing phone number</label>
+        <input type="billing-phone" class="form-control" id="billing-phone" placeholder="123-456-7890">
+        <span id="help-billing-phone" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-given-name">Billing given name</label>
+        <input type="billing-given-name" class="form-control" id="billing-given-name" placeholder="First">
+        <span id="help-billing-given-name" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-surname">Billing surname</label>
+        <input type="billing-surname" class="form-control" id="billing-surname" placeholder="Last">
+        <span id="help-billing-surname" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-street-address">Billing street address</label>
+        <input type="billing-street-address" class="form-control" id="billing-street-address" placeholder="123 Street">
+        <span id="help-billing-street-address" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-extended-address">Billing extended address</label>
+        <input type="billing-extended-address" class="form-control" id="billing-extended-address" placeholder="Unit 1">
+        <span id="help-billing-extended-address" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-locality">Billing locality</label>
+        <input type="billing-locality" class="form-control" id="billing-locality" placeholder="City">
+        <span id="help-billing-locality" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-region">Billing region</label>
+        <input type="billing-region" class="form-control" id="billing-region" placeholder="State">
+        <span id="help-billing-region" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-postal-code">Billing postal code</label>
+        <input type="billing-postal-code" class="form-control" id="billing-postal-code" placeholder="12345">
+        <span id="help-billing-postal-code" class="help-block"></span>
+      </div>
+      <div class="form-group">
+        <label for="billing-country-code">Billing country code (Alpha 2)</label>
+        <input type="billing-country-code" class="form-control" id="billing-country-code" placeholder="XX">
+        <span id="help-billing-country-code" class="help-block"></span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-xs-12">
+      <table class="table">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Number (successful with no challenge)</td><td>4000000000001000</td></tr>
+        <tr><td>Number (successful with challenge)</td><td>4000000000001091</td></tr>
+                <tr><td>Number (unsuccessful with challenge)</td><td>4000000000001109</td></tr>
+        <tr><td>Expiration Date (for sandbox testing, year must be exactly 3 years in the future)</td><td>12/22</td></tr>
+        <tr><td>CVV</td><td>123</td></tr>
+      </table>
+    </div>
+  </div>
+  
+  <div class="col-xs-12 nonce-group hidden">
+    <p class="lead"> Payment method nonce received: </p>
+    <div class="input-group">
+      <span class="input-group-addon lead"></span>
+      <input readonly name="nonce" class="form-control">
+    </div>
+      <br>
+      <p class="lead"> Reload the codepen to try another card. </p>
+      <br>
+  </div>
+
+  <div id="hosted-fields">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="input-group">
+          <span class="input-group-addon"><span class="glyphicon glyphicon-credit-card"></span></span>
+          <div id="hf-number" class="form-control"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-6">
+        <div class="input-group">
+          <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+          <div id="hf-date" class="form-control"></div>
+        </div>
+      </div>
+      <div class="col-xs-6">
+        <div class="input-group">
+          <span class="input-group-addon"><span class="glyphicon glyphicon-lock"></span></span>
+          <div id="hf-cvv" class="form-control"></div>
+          <span class="input-group-addon">CVV</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-xs-6">
+      <div class="input-group nonce-group hidden">
+        <span class="input-group-addon">nonce</span>
+        <input readonly name="nonce" class="form-control">
+      </div>
+      
+      <br />
+      
+      <div class="input-group pay-group">
+        <input disabled id="pay-btn" class="btn btn-success" type="submit" value="Loading...">
+      </div>
+    </div>
+  </div>
+</form>
+    
+
+<script src='https://js.braintreegateway.com/web/3.48.0/js/client.min.js'></script>
+<script src='https://js.braintreegateway.com/web/3.48.0/js/three-d-secure.js'></script>
+<script src='https://js.braintreegateway.com/web/3.48.0/js/hosted-fields.js'></script>
+  
+      <script>
+var hf, threeDS;
+var hostedFieldsContainer = document.getElementById('hosted-fields');
+var payBtn = document.getElementById('pay-btn');
+var nonceGroup = document.querySelector('.nonce-group');
+var nonceInput = document.querySelector('.nonce-group input');
+var nonceSpan = document.querySelector('.nonce-group span');
+var payGroup = document.querySelector('.pay-group');
+var billingFields = [
+'email',
+'billing-phone',
+'billing-given-name',
+'billing-surname',
+'billing-street-address',
+'billing-extended-address',
+'billing-locality',
+'billing-region',
+'billing-postal-code',
+'billing-country-code'].
+reduce(function (fields, fieldName) {
+  var field = fields[fieldName] = {
+    input: document.getElementById(fieldName),
+    help: document.getElementById('help-' + fieldName) };
+
+
+  field.input.addEventListener('focus', function () {
+    clearFieldValidations(field);
+  });
+
+  return fields;
+}, {});
+
+function autofill(e) {
+  e.preventDefault();
+
+  billingFields.email.input.value = 'your.email@email.com';
+  billingFields['billing-phone'].input.value = '123-456-7890';
+  billingFields['billing-given-name'].input.value = 'Jane';
+  billingFields['billing-surname'].input.value = 'Doe';
+  billingFields['billing-street-address'].input.value = '123 XYZ Street';
+  billingFields['billing-locality'].input.value = 'Anytown';
+  billingFields['billing-region'].input.value = 'CA';
+  billingFields['billing-postal-code'].input.value = '12345';
+  billingFields['billing-country-code'].input.value = 'US';
+
+  Object.keys(billingFields).forEach(function (field) {
+    clearFieldValidations(billingFields[field]);
+  });
+}
+
+document.getElementById('autofill').addEventListener('click', autofill);
+
+function clearFieldValidations(field) {
+  field.help.innerText = '';
+  field.help.parentNode.classList.remove('has-error');
+}
+
+billingFields['billing-extended-address'].optional = true;
+
+function validateBillingFields() {
+  var isValid = true;
+
+  Object.keys(billingFields).forEach(function (fieldName) {
+    var fieldEmpty = false;
+    var field = billingFields[fieldName];
+
+    if (field.optional) {
+      return;
+    }
+
+    fieldEmpty = field.input.value.trim() === '';
+
+    if (fieldEmpty) {
+      isValid = false;
+      field.help.innerText = 'Field cannot be blank.';
+      field.help.parentNode.classList.add('has-error');
+    } else {
+      clearFieldValidations(field);
+    }
+  });
+
+  return isValid;
+}
+
+function start() {
+  getClientToken();
+}
+
+function getClientToken() {
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function () {
+    //console.log(xhr.responseText);
+    if (xhr.readyState === 4) {
+      onFetchClientToken(xhr.responseText);
+    }
+  };
+  xhr.open("GET", "token.php", true);
+
+  xhr.send();
+}
+
+function setupComponents(clientToken) {
+  return Promise.all([
+  braintree.hostedFields.create({
+    authorization: clientToken,
+    styles: {
+      input: {
+        'font-size': '14px',
+        'font-family': 'monospace' } },
+
+
+    fields: {
+      number: {
+        selector: '#hf-number',
+        placeholder: '4111 1111 1111 1111' },
+
+      cvv: {
+        selector: '#hf-cvv',
+        placeholder: '123' },
+
+      expirationDate: {
+        selector: '#hf-date',
+        placeholder: '12 / 34' } } }),
+
+
+
+  braintree.threeDSecure.create({
+    authorization: clientToken,
+    version: 2 })]);
+
+
+}
+
+function onFetchClientToken(clientToken) {
+  console.log(clientToken);
+  return setupComponents(clientToken).then(function (instances) {
+    hf = instances[0];
+    threeDS = instances[1];
+
+    setupForm();
+  }).catch(function (err) {
+    console.log('component error:', err);
+  });
+}
+
+function setupForm() {
+  enablePayNow();
+}
+
+function enablePayNow() {
+  payBtn.value = 'Pay Now';
+  payBtn.removeAttribute('disabled');
+}
+
+function showNonce(payload, liabilityShift) {
+  nonceSpan.textContent = "Liability shifted: " + liabilityShift;
+  nonceInput.value = payload.nonce;
+  payGroup.classList.add('hidden');
+  hostedFieldsContainer.classList.add('hidden');
+  payGroup.style.display = 'none';
+  hostedFieldsContainer.style.display = 'none';
+  nonceGroup.classList.remove('hidden');
+}
+
+payBtn.addEventListener('click', function (event) {
+  payBtn.setAttribute('disabled', 'disabled');
+  payBtn.value = 'Processing...';
+
+  var billingIsValid = validateBillingFields();
+
+  if (!billingIsValid) {
+    enablePayNow();
+
+    return;
+  }
+
+  hf.tokenize().then(function (payload) {
+    return threeDS.verifyCard({
+      onLookupComplete: function (data, next) {
+        next();
+      },
+      amount: '0.01',
+      nonce: payload.nonce,
+      bin: payload.details.bin,
+      email: billingFields.email.input.value,
+      billingAddress: {
+        givenName: billingFields['billing-given-name'].input.value,
+        surname: billingFields['billing-surname'].input.value,
+        phoneNumber: billingFields['billing-phone'].input.value.replace(/[\(\)\s\-]/g, ''), // remove (), spaces, and - from phone number
+        streetAddress: billingFields['billing-street-address'].input.value,
+        extendedAddress: billingFields['billing-extended-address'].input.value,
+        locality: billingFields['billing-locality'].input.value,
+        region: billingFields['billing-region'].input.value,
+        postalCode: billingFields['billing-postal-code'].input.value,
+        countryCodeAlpha2: billingFields['billing-country-code'].input.value } });
+
+
+  }).then(function (payload) {
+    if (!payload.liabilityShifted) {
+      console.log('Liability did not shift', payload);
+      showNonce(payload, false);
+      return;
+    }
+
+    console.log('verification success:', payload);
+    showNonce(payload, true);
+    // send nonce and verification data to your server
+  }).catch(function (err) {
+    console.log(err);
+    enablePayNow();
+  });
+});
+
+start();
+    </script>
+
+  
+
+</body>
+
+</html>
+ 
